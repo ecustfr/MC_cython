@@ -54,13 +54,17 @@ def cell_list(): #对 粒子的位置进行分类
     
     pass
 
-def MC_hs_origin( r , box_length , sigma , nsteps , sim_par:dict ,sample_or_not:bool , samples:[dict])->[dict]: #不使用 cell list 进行优化
+def MC_hs_origin( r , box_length , sigma , nsteps , sim_par:dict ,sample_or_not:bool , sample_interval:int, samples:[dict])->[dict]: #不使用 cell list 进行优化
     # sim_par = {Eps_Move:eps_move} eps_move*box_length 粒子移动的最大距离 
     
     eps_move = sim_par['Eps_Move']
 
     num_par = r.shape[0]
-    for i in range(nsteps):
+
+    if samples is None:
+        samples
+
+    for step in range(nsteps):
         for par in range(num_par):
             r_try = r[0,:]+ (2*np.random.rand(3)-1)*eps_move
             if overlap1(r_try,r[1:,:],box_length,sigma):
@@ -73,7 +77,10 @@ def MC_hs_origin( r , box_length , sigma , nsteps , sim_par:dict ,sample_or_not:
             r = np.roll(r,1,axis=1)
             acc_total += acc 
         if sample_or_not:
+            if step % sample_interval == 0:
+                samples = sample_MC_hs( )
             #进行采样
+
 
     acc_ratio = acc_total/(nsteps*num_par)
     return (acc_ratio,r)
@@ -83,7 +90,7 @@ def MC_hs( cell_list ): # 使用 cell_list 进行优化
     
     pass
 
-def sample_MC():
+def sample_MC_hs (): # 返回某一帧的采样值
     
 
     pass
@@ -107,6 +114,37 @@ def insert_particle() :
 
 def delete_particle():
     pass
+
+def RDF_Calcu(r,box_length,dr)->np.ndarray:
+    num_par = r.shape[0]
+    
+    density = num_par / box_length**3
+
+    bins = np.ceil(np.sqrt(3)*box_length/dr/2.0) # 最远距离
+    
+    bin_edges = np.arange(0,bins+1)*dr
+    histogram = np.zeros_like(bin_edges)
+    
+    factor = 4.0/3.0 *np.pi * (bin_edges[1:bins + 1] ** 3 - bin_edges[0:bins] ** 3) * density * num_par
+    for i in range(num_par-1):
+        for j in range(i+1,num_par): 
+            r2 = 0.0
+            for d in range(3):
+                rijd = r[i,d]-r[j,d]
+                rijd -= np.rint(rijd / box_length) * box_length
+                r2 += rijd * rijd
+            
+            r = np.sqrt(r2)
+            b = np.floor(r/dr)
+            histogram [b] += 2.0
+    return np.array(histogram) /factor
+    
+
+
+def Pressure_Calcu( r , box_length , sigma ):
+    pass
+    
+
 
 if __name__ == '__main__':
     
